@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Ports;
+using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace Monitor
 {
@@ -54,6 +58,7 @@ namespace Monitor
         {
             LogTextBlock.AppendText("Start Recording\r\n");
             mySerialPort.Open();
+            Thread.Sleep(3000);
         }
 
         private void Menu_StartClick(object sender, RoutedEventArgs e)
@@ -63,27 +68,48 @@ namespace Monitor
 
         public void AddDataMethod(string data)
         {
-            if (SaveRecordedValue(data))
+            //LogTextBlock.AppendText(data);
+            //var records = data.Split('|');
+            var values = new List<int>();
+            //foreach (var record in records)
+            //{
+                int dataValue;
+                if (Int32.TryParse(data, out dataValue))
+                {
+                    values.Add(dataValue);
+                }
+                else
+                {
+                    LogTextBlock.AppendText(data);
+                }
+            //}
+
+            if (values.Count > 0)
             {
-                LogTextBlock.AppendText((TotalValue/CountRecorded).ToString());
-                TotalValue = 0;
-                CountRecorded = 0;
+                foreach (var value in values)
+                {
+                    if (SaveRecordedValue(value))
+                    {
+                        LogTextBlock.AppendText((TotalValue/CountRecorded) + Environment.NewLine);
+                        TotalValue = 0;
+                        CountRecorded = 0;
+                    }
+                }
             }
         }
 
-        private bool SaveRecordedValue(string data)
+        public bool SaveRecordedValue(int data)
         {
-            int dataToSave = Convert.ToInt32(data);
             if (CountRecorded == 0)
             {
                 Timer.Restart();
                 CountRecorded++;
-                TotalValue += dataToSave;
+                TotalValue += data;
             }
             else
             {
                 CountRecorded++;
-                TotalValue += dataToSave;
+                TotalValue += data;
                 if (Timer.ElapsedMilliseconds > TimePeriod)
                 {
                     return true;
@@ -99,7 +125,7 @@ namespace Monitor
             {
                 var sp = (SerialPort)sender;
 
-                var data = mySerialPort.ReadExisting();
+                var data = mySerialPort.ReadLine();
 
                 this.Dispatcher.BeginInvoke(MyDelegate, data);
             }
