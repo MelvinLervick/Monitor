@@ -93,15 +93,15 @@ namespace Monitor
                 {
                     if (SaveRecordedValue(value))
                     {
-                        var outputValue = string.Format("{0}", (TotalValue/CountRecorded) + Environment.NewLine);
+                        var outputValue = string.Format("{0}", TotalValue/CountRecorded);
 
-                        using (var w = new StreamWriter(AnalogData))
+                        using (var w = File.AppendText(AnalogData))
                         {
-                            w.Write(outputValue);
+                            w.WriteLine(outputValue);
                             w.Flush();
                         }
 
-                        if(ScreenIO) LogTextBlock.AppendText(outputValue);
+                        if(ScreenIO) LogTextBlock.AppendText(outputValue + Environment.NewLine);
                         TotalValue = 0;
                         CountRecorded = 0;
                     }
