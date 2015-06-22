@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Threading;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace Monitor
 {
@@ -16,6 +15,9 @@ namespace Monitor
     public partial class MainWindow : Window
     {
         private const int TimePeriod = 1000;
+        private string ArduinoPort;
+        private string AnalogData;
+        private bool ScreenIO;
         private SerialPort mySerialPort;
         public delegate void AddDataDelegate(String myString);
         public AddDataDelegate MyDelegate;
@@ -26,9 +28,14 @@ namespace Monitor
         public MainWindow()
         {
             InitializeComponent();
+
+            ArduinoPort = ConfigurationManager.AppSettings["ArduinoPort"];
+            AnalogData = ConfigurationManager.AppSettings["AnalogDataFile"];
+            ScreenIO = Convert.ToBoolean(ConfigurationManager.AppSettings["ScreenIO"]);
+
             try
             {
-                mySerialPort = new SerialPort("COM3")
+                mySerialPort = new SerialPort(ArduinoPort)
                 {
                     BaudRate = 9600,
                     DtrEnable = true
@@ -68,21 +75,17 @@ namespace Monitor
 
         public void AddDataMethod(string data)
         {
-            //LogTextBlock.AppendText(data);
-            //var records = data.Split('|');
             var values = new List<int>();
-            //foreach (var record in records)
-            //{
-                int dataValue;
-                if (Int32.TryParse(data, out dataValue))
-                {
-                    values.Add(dataValue);
-                }
-                else
-                {
-                    LogTextBlock.AppendText(data);
-                }
-            //}
+
+            int dataValue;
+            if (Int32.TryParse(data, out dataValue))
+            {
+                values.Add(dataValue);
+            }
+            else
+            {
+                LogTextBlock.AppendText(data);
+            }
 
             if (values.Count > 0)
             {
@@ -90,7 +93,15 @@ namespace Monitor
                 {
                     if (SaveRecordedValue(value))
                     {
-                        LogTextBlock.AppendText((TotalValue/CountRecorded) + Environment.NewLine);
+                        var outputValue = string.Format("{0}", (TotalValue/CountRecorded) + Environment.NewLine);
+
+                        using (var w = new StreamWriter(AnalogData))
+                        {
+                            w.Write(outputValue);
+                            w.Flush();
+                        }
+
+                        if(ScreenIO) LogTextBlock.AppendText(outputValue);
                         TotalValue = 0;
                         CountRecorded = 0;
                     }
