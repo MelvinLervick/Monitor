@@ -93,7 +93,8 @@ namespace Monitor
                 {
                     if (SaveRecordedValue(value))
                     {
-                        var outputValue = string.Format("{0}", TotalValue/CountRecorded);
+                        long avgValue = TotalValue / CountRecorded;
+                        var outputValue = string.Format("{0}\t{1}", DateTime.UtcNow, avgValue);
 
                         using (var w = File.AppendText(AnalogData))
                         {
