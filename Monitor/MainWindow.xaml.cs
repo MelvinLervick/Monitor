@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Threading;
 using System.Windows;
+using Microsoft.Win32;
 
 namespace Monitor
 {
@@ -25,13 +26,16 @@ namespace Monitor
         private int TotalValue;
         private Stopwatch Timer;
 
+        private string PrintSettingsFolder;
+        private string PrintSettingsFileName;
+        private string PrintFilesFolder;
+        private string PrintFileName;
+
         public MainWindow()
         {
             InitializeComponent();
 
-            ArduinoPort = ConfigurationManager.AppSettings["ArduinoPort"];
-            AnalogData = ConfigurationManager.AppSettings["AnalogDataFile"];
-            ScreenIO = Convert.ToBoolean(ConfigurationManager.AppSettings["ScreenIO"]);
+            GetAppSettings();
 
             try
             {
@@ -48,10 +52,24 @@ namespace Monitor
                 LogTextBlock.AppendText(string.Format("{0}\r\n", ex.ToString()));
             }
 
+            LabelSettingsFolder.Content = PrintSettingsFolder;
+            TextSettingsFileName.Text = PrintSettingsFileName;
+            LabelFilesFolder.Content = PrintFilesFolder;
+
             this.MyDelegate = new AddDataDelegate(AddDataMethod);
             CountRecorded = 0;
             TotalValue = 0;
             Timer = new Stopwatch();
+        }
+
+        private void GetAppSettings()
+        {
+            ArduinoPort = ConfigurationManager.AppSettings["ArduinoPort"];
+            AnalogData = ConfigurationManager.AppSettings["AnalogDataFile"];
+            ScreenIO = Convert.ToBoolean(ConfigurationManager.AppSettings["ScreenIO"]);
+            PrintSettingsFolder = ConfigurationManager.AppSettings["PrintSettingsFolder"];
+            PrintFilesFolder = ConfigurationManager.AppSettings["PrintFilesFolder"];
+            PrintFileName = ConfigurationManager.AppSettings["PrintFileName"];
         }
 
         private void Menu_FileExitClick(object sender, RoutedEventArgs e)
@@ -156,6 +174,66 @@ namespace Monitor
         {
             LogTextBlock.AppendText("Stop Recording\r\n");
             mySerialPort.Close();
+        }
+
+        private void Menu_SettingsClick(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void Menu_OpenSvgFileClick(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void Menu_ReadLayerClick(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void Menu_SendLayerClick(object sender, RoutedEventArgs e)
+        {
+        }
+
+        private void Button_SettingsClick(object sender, RoutedEventArgs e)
+        {
+            bool? result;
+            var dlg = OpenFileDialog(out result, LabelSettingsFolder.Content.ToString(), "xml");
+
+            // Get the selected file name and display in a TextBox 
+            if (result == true)
+            {
+                // Open document 
+                //TextSettingsFileName.Text = System.IO.Path.GetDirectoryName(dlg.FileName);
+                TextSettingsFileName.Text = dlg.SafeFileName;
+            }
+        }
+
+        private void Button_PrintClick(object sender, RoutedEventArgs e)
+        {
+            bool? result;
+            var dlg = OpenFileDialog(out result, LabelFilesFolder.Content.ToString(), "svg");
+
+            // Get the selected file name and display in a TextBox 
+            if (result == true)
+            {
+                // Open document 
+                //TextFileName.Text = System.IO.Path.GetDirectoryName(dlg.FileName);
+                TextFileName.Text = dlg.SafeFileName;
+            }
+        }
+
+        private static OpenFileDialog OpenFileDialog(out bool? result, string dir, string extDefault)
+        {
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                InitialDirectory = dir,
+                DefaultExt = ".xml".Replace("xml",extDefault),
+                Filter = "Files (.xml)|*.xml|All files (*.*)|*.*".Replace("xml", extDefault),
+                CheckPathExists = true,
+                CheckFileExists = true
+            };
+
+            // Display OpenFileDialog by calling ShowDialog method 
+            result = dlg.ShowDialog();
+            return dlg;
         }
     }
 }
